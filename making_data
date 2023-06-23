@@ -1,0 +1,407 @@
+rm(list=ls())
+
+library(foreign)
+library(dplyr)
+library(gdata)
+library(compareGroups)
+library(estimatr)
+library(lmtest)
+library(miceadds)
+library(ggplot2)
+
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data")
+
+
+### OTHER FUNCTIONS ###
+
+guapa<-function(x)
+{
+  redondeo<-ifelse(abs(x)<0.00001,signif(x,1),
+                   ifelse(abs(x)<0.0001,signif(x,1),
+                          ifelse(abs(x)<0.001,signif(x,1),
+                                 ifelse(abs(x)<0.1,sprintf("%.3f",round(x,3)),
+                                        ifelse(abs(x)<1,sprintf("%.2f",round(x,2)),
+                                               ifelse(abs(x)<10,sprintf("%.2f",round(x,2)),
+                                                      ifelse(abs(x)<100,sprintf("%.1f",round(x,1)),
+                                                             ifelse(abs(x)>=100,round(x,0),round(x,0)))))))))
+  return(redondeo)
+}
+
+ic_guapa<-function(x,y,z)
+{
+  ic<-paste(x," [",y,";",z,"]",sep="")
+  return(ic)
+}
+
+pval_guapa<-function(x)
+{
+  pval<-ifelse(x<0.00001,"<0.00001",
+               ifelse(x<0.001,"<0.001",round(x,3)))
+  return(pval)
+}
+
+mean_ic_guapa <- function(x, na.rm=FALSE) 
+{
+  if (na.rm) x <- na.omit(x)
+  se<-sqrt(var(x)/length(x))
+  z<-qnorm(1-0.05/2)
+  media<-mean(x)
+  ic95a<-guapa(media-(z*se))
+  ic95b<-guapa(media+(z*se))
+  media<-guapa(media)
+  ic_ok<-ic_guapa(media,ic95a,ic95b)
+  return(ic_ok)
+}
+
+mean_sd_guapa <- function(x) 
+{
+  media<-guapa(mean(x, na.rm=TRUE))
+  sd<-guapa(sd(x, na.rm=TRUE))
+  end<-paste(media," (",sd,")",sep="")
+  return(end)
+}
+
+beta_se_ic_guapa <- function(x, y) 
+{
+  z<-qnorm(1-0.05/2)
+  ic95a<-guapa(x-(z*y))
+  ic95b<-guapa(x+(z*y))
+  media<-guapa(x)
+  ic_ok<-ic_guapa(media,ic95a,ic95b)
+  return(ic_ok)
+}
+
+risk_se_ic_guapa <- function(x,y) 
+{
+  z<-qnorm(1-0.05/2)
+  hr<-guapa(exp(x))
+  ic95a<-guapa(exp(x-(z*y)))
+  ic95b<-guapa(exp(x+(z*y)))
+  ic_ok<-ic_guapa(hr,ic95a,ic95b)
+  return(ic_ok)
+}
+
+risk_se_ic_guapa2 <- function(x,y) 
+{
+  z<-qnorm(1-0.05/2)
+  hr<-round(exp(x),5)
+  ic95a<-round(exp(x-(z*y)),5)
+  ic95b<-round(exp(x+(z*y)),5)
+  ic_ok<-ic_guapa(hr,ic95a,ic95b)
+  return(ic_ok)
+}
+
+
+############################
+### CREATION OF DATABASE ###
+############################
+
+# MBRN #
+
+mbrn <- read.spss("PDB2374_MBRN_541_v12.sav", use.value.label=TRUE, to.data.frame=TRUE, allow="_")
+names(mbrn)<-tolower(names(mbrn))
+mbrn <- mbrn[,c("preg_id_2374","vekt","mors_alder","kjonn","svlen","flerfodsel","fstart")]
+
+# Q1 #
+q1_temp <- read.spss("PDB2374_Q1_v12.sav", use.value.label=TRUE, to.data.frame=TRUE, allow="_")
+names(q1_temp)<-tolower(names(q1_temp))
+q1 <- q1_temp[,c("preg_id_2374","aa85","aa87","aa1355","aa1356","aa1357","aa1358","aa1359","aa1360","aa1361",
+                 "aa1362","aa1363","aa1364","aa1365","aa834","aa870","aa879","aa1125","aa1124","aa1128","aa1129",
+                 "aa836","aa837","aa838","aa839","aa840","aa841","aa872","aa873","aa874","aa875","aa876",
+                 "aa877","aa881","aa882","aa883","aa884","aa885","aa886","aa301","aa302","aa303","aa304","aa305",
+                 "aa95","aa96","aa101","aa102","aa107","aa108","aa113","aa114",
+                 "aa119","aa120","aa125","aa126","aa131","aa132","aa137","aa138",
+                 "aa143","aa144","aa149","aa150",
+                 "aa94","aa100","aa106","aa112","aa118","aa124","aa130","aa136","aa142","aa148",
+                 "aa940","aa941","aa942","aa943","aa944","aa945","aa946",
+                 "aa833","aa869","aa878")]
+
+# Q3 #
+q3_temp <- read.spss("PDB2374_Q3_v12.sav", use.value.label=TRUE, to.data.frame=TRUE, allow="_")
+names(q3_temp)<-tolower(names(q3_temp))
+q3 <- q3_temp[,c("preg_id_2374","cc676","cc677","cc678","cc679","cc680",
+                 "cc682","cc683","cc684","cc685","cc686","cc687","cc706","cc707","cc708",
+                 "cc709","cc710","cc711")]
+
+# CREATION OF VARIABLES #
+
+q1$bmi_mom<-q1$aa85/((q1$aa87/100)^2)
+q1$bmi_mom<-ifelse(q1$bmi_mom<13 | q1$bmi_mom>60,NA,q1$bmi_mom)
+
+q1$aa1355<-with(q1,ifelse(aa1355=="Yes",1,0))
+q1$aa1356<-with(q1,ifelse(aa1356=="No",0,1))
+q1$aa1359<-with(q1,ifelse(aa1359=="No",0,1))
+q1$aa1363<-with(q1,ifelse(aa1363=="Yes",1,0))
+q1$aa1364<-with(q1,ifelse(aa1364<13 | aa1364>50,NA,aa1364))
+
+q1$smkinit_mom<-with(q1,ifelse(aa1355==1 | aa1356>1 | aa1357!=0 | aa1358!=0 | aa1359>1 | aa1360!=0 | aa1361!=0 | 
+                                 !is.na(aa1362) | aa1363==2 | !is.na(aa1364) | !is.na(aa1365),1,0))
+q1$smkinit_mom<-with(q1,ifelse(is.na(smkinit_mom),0,smkinit_mom))
+q1$smkinit_mom<-with(q1,ifelse(is.na(aa1355) & is.na(aa1356) & is.na(aa1357) & is.na(aa1358) & is.na(aa1359) & is.na(aa1360) & is.na(aa1361) & 
+                                 is.na(aa1362) & is.na(aa1363) & is.na(aa1364) & is.na(aa1365),NA,smkinit_mom))
+
+q1$aa1124<-with(q1,ifelse(is.na(aa1124),NA,
+                          ifelse(aa1124=="More than 1 check box filled in",NA,
+                                 ifelse(aa1124=="9-year elementary education",1,
+                                        ifelse(aa1124=="Further education 1-2 years",2,
+                                               ifelse(aa1124=="Further education - vocational",3,
+                                                      ifelse(aa1124=="Further education 3 years - (general studies, sixth form)",4,
+                                                             ifelse(aa1124=="Higher education (university/college), up to and including 4 years",5,
+                                                                    ifelse(aa1124=="Higher education (university/college), over 4 years",6,NA)))))))))
+q1$aa1125<-with(q1,ifelse(is.na(aa1125),NA,
+                          ifelse(aa1125=="More than 1 check box filled in",NA,
+                                 ifelse(aa1125=="9-year elementary education",1,
+                                        ifelse(aa1125=="Further education 1-2 years",2,
+                                               ifelse(aa1125=="Further education - vocational",3,
+                                                      ifelse(aa1125=="Further education 3 years - (general studies, sixth form)",4,
+                                                             ifelse(aa1125=="Higher education (university/college), up to and including 4 years",5,
+                                                                    ifelse(aa1125=="Higher education (university/college), over 4 years",6,NA)))))))))
+
+q1$aa1125<-with(q1,ifelse(!is.na(aa1124) & !is.na(aa1125) & (aa1125>aa1124),aa1125,
+                          ifelse(!is.na(aa1124) & !is.na(aa1125) & (aa1125<aa1124),NA,aa1125)))
+q1$aa1128x<-with(q1,ifelse(aa1128==1 | aa1129==1,1,0))
+q1$aa1128x<-with(q1,ifelse(is.na(aa1128x),0,aa1128x))
+
+q1$edu_mom<-with(q1,ifelse(aa1124==1,1,
+                           ifelse(aa1124==2,2,
+                                  ifelse(aa1124==3,3,
+                                         ifelse(aa1124==4,4,
+                                                ifelse(aa1124==5,5,
+                                                       ifelse(aa1124==6,6,NA)))))))
+q1$edu_mom<-with(q1,ifelse(is.na(aa1125),edu_mom,
+                           ifelse(aa1125==1,1,
+                                  ifelse(aa1125==2,2,
+                                         ifelse(aa1125==3,3,
+                                                ifelse(aa1125==4,4,
+                                                       ifelse(aa1125==5,5,
+                                                              ifelse(aa1125==6,6,NA))))))))
+q1$edu_mom<-with(q1,ifelse(is.na(edu_mom),0,edu_mom))
+
+q1$edu_mom<-with(q1,ifelse(edu_mom==0 & aa1128x==1,3,
+                           ifelse((edu_mom>0 & edu_mom<3) & aa1128x==1,3,
+                                  ifelse(edu_mom>=3 & aa1128x==1,edu_mom,
+                                         ifelse(edu_mom==0 & aa1128x==0,NA,
+                                                ifelse((edu_mom>0 & edu_mom<3) & aa1128x==0,edu_mom,
+                                                       ifelse(edu_mom>=3 & aa1128x==0,edu_mom,NA)))))))
+
+q1$eduyears_mom<-with(q1,ifelse(edu_mom==1,10,
+                                ifelse(edu_mom==2,10,
+                                       ifelse(edu_mom==3,13,
+                                              ifelse(edu_mom==4,13,
+                                                     ifelse(edu_mom==5,19,
+                                                            ifelse(edu_mom==6,20,
+                                                                   ifelse(is.na(edu_mom),NA,NA))))))))
+
+q1$edu_mom<-with(q1,ifelse(edu_mom==1,1,
+                           ifelse(edu_mom==2,1,
+                                  ifelse(edu_mom==3,2,
+                                         ifelse(edu_mom==4,2,
+                                                ifelse(edu_mom==5,3,
+                                                       ifelse(edu_mom==6,4,
+                                                              ifelse(is.na(edu_mom),NA,NA))))))))
+
+vars01<-c("aa94","aa100","aa106","aa112","aa118","aa124","aa130","aa136","aa142","aa148")
+vars02<-c("aa94x","aa100x","aa106x","aa112x","aa118x","aa124x","aa130x","aa136x","aa142x","aa148x")
+
+for(i in 1:length(vars01))
+{
+  q1[,vars02[i]]<-with(q1,ifelse(is.na(q1[,vars01[i]]),0,1))
+}
+
+q1$parity<-with(q1,aa94x+aa100x+aa106x+aa112x+aa118x+aa124x+aa130x+aa136x+aa142x+aa148x)
+q1$parity<-with(q1,ifelse(parity>=4,4,parity))
+
+
+# DEPRESSION, ANXIETY AND EPILEPSY #
+
+# BEFORE PREGNANCY #
+
+vars<-c("aa833","aa869")
+for(i in 1:length(vars))
+  
+{
+  q1[,vars[i]]<-with(q1,ifelse(is.na(q1[,vars[i]]),0,q1[,vars[i]]))
+}
+
+q1$dep_bdx_q1<-q1$aa869
+q1$epi_bdx_q1<-q1$aa833
+
+
+# DURING PREGNANCY #
+
+vars<-c("aa870","aa834")
+for(i in 1:length(vars))
+  
+{
+  q1[,vars[i]]<-with(q1,ifelse(is.na(q1[,vars[i]]),0,q1[,vars[i]]))
+}
+
+q1$dep_dx_q1<-q1$aa870
+q1$epi_dx_q1<-q1$aa834
+
+vars<-c("cc676","cc677","cc678","cc679","cc680")
+for(i in 1:length(vars))
+  
+{
+  q3[,vars[i]]<-with(q3,ifelse(is.na(q3[,vars[i]]),0,q3[,vars[i]]))
+}
+
+q3$dep_dx_q3<-with(q3,ifelse(cc676==1 | cc677==1 | cc678==1 | cc679==1 | cc680==1,1,0))
+
+
+# MEDICATION FOR DEPRESSION, ANXIETY AND EPILEPSY DURING PREGNANCY#
+
+vars<-c("aa837","aa838","aa839","aa840","aa873","aa874","aa875","aa876")
+for(i in 1:length(vars))
+  
+{
+  q1[,vars[i]]<-with(q1,ifelse(is.na(q1[,vars[i]]),0,q1[,vars[i]]))
+}
+
+q1$dep_tt_q1<-with(q1,ifelse(aa873==1 | aa874==1 | aa875==1 | aa876==1,1,0))
+q1$epi_tt_q1<-with(q1,ifelse(aa837==1 | aa838==1 | aa839==1 | aa840==1,1,0))
+
+vars<-c("cc682","cc683","cc684","cc685","cc686")
+for(i in 1:length(vars))
+  
+{
+  q3[,vars[i]]<-with(q3,ifelse(is.na(q3[,vars[i]]),0,q3[,vars[i]]))
+}
+
+q3$dep_tt_q3<-with(q3,ifelse(cc682==1 | cc683==1 | cc684==1 | cc685==1 | cc686==1,1,0))
+
+
+# RECODE VARIABLES FROM MBRN #
+
+mbrn$flerfodsel<-with(mbrn,ifelse(flerfodsel=="Multiple birth",1,0))
+mbrn$flerfodsel<-with(mbrn,ifelse(is.na(flerfodsel),0,flerfodsel))
+mbrn<-mbrn[mbrn$flerfodsel==0,]
+mbrn$birthweight<-mbrn$vekt
+mbrn$agedelivery_mom<-mbrn$mors_alder
+mbrn$sex_kid<-mbrn$kjonn
+
+
+# GENETIC DATA #
+
+gen<-as.data.frame(read.delim("./genetic_data_marta.txt",header=TRUE,sep="\t"))
+gen$genotype<-1
+gen<-gen[,c("IID","genotype")]
+names(gen)<-c("sentrixid_mom","genotype_mom")
+
+moms<-read.spss("N:/durable/RAW/3.MoBa_genetics/key/2022_03_31_MoBaGeneticsTot_Mother_PDB2374sav.sav",
+                use.value.labels=FALSE,to.data.frame=TRUE,allow="_")
+names(moms)<-tolower(names(moms))
+moms$m_id_2374<-gsub("","", moms$m_id_2374)
+moms$sentrixid_mom<-gsub("","", moms$sentrix_id)
+moms$batch_mom<-gsub("","", moms$batch)
+moms<-moms[,c("m_id_2374","sentrixid_mom","batch_mom")]
+moms<-merge(moms,gen,by="sentrixid_mom",all.x=TRUE)
+moms$genotype_mom<-with(moms,ifelse(is.na(genotype_mom),0,genotype_mom))
+moms<-moms[order(moms$m_id_2374,-abs(moms$genotype_mom)),]
+moms<-moms[!duplicated(moms$m_id_2374),]
+
+dads<-read.spss("N:/durable/RAW/3.MoBa_genetics/key/2022_03_31_MoBaGeneticsTot_Father_PDB2374sav.sav",
+                use.value.labels=FALSE,to.data.frame=TRUE,allow="_")
+names(dads)<-tolower(names(dads))
+dads$f_id_2374<-gsub("","", dads$f_id_2374)
+dads$sentrixid_dad<-gsub("","", dads$sentrix_id)
+dads$batch_dad<-gsub("","", dads$batch)
+dads<-dads[,c("f_id_2374","sentrixid_dad","batch_dad")]
+gen<-rename.vars(gen, from=c("sentrixid_mom","genotype_mom"), to=c("sentrixid_dad","genotype_dad"))
+dads<-merge(dads,gen,by="sentrixid_dad",all.x=TRUE)
+dads$genotype_dad<-with(dads,ifelse(is.na(genotype_dad),0,genotype_dad))
+dads<-dads[order(dads$f_id_2374,-abs(dads$genotype_dad)),]
+dads<-dads[!duplicated(dads$f_id_2374),]
+
+kids<-read.spss("N:/durable/RAW/3.MoBa_genetics/key/2022_03_31_MoBaGeneticsTot_Child_PDB2374sav.sav",
+                use.value.labels=FALSE,to.data.frame=TRUE,allow="_")
+names(kids)<-tolower(names(kids))
+kids<-kids[!duplicated(kids$preg_id_2374),]
+kids$preg_id_2374<-gsub("","", kids$preg_id_2374)
+kids$sentrixid_kid<-gsub("","", kids$sentrix_id)
+kids$batch_kid<-gsub("","", kids$batch)
+kids<-kids[,c("preg_id_2374","sentrixid_kid","batch_kid")]
+gen<-rename.vars(gen, from=c("sentrixid_dad","genotype_dad"), to=c("sentrixid_kid","genotype_kid"))
+kids<-merge(kids,gen,by="sentrixid_kid",all.x=TRUE)
+kids$genotype_kid<-with(kids,ifelse(is.na(genotype_kid),0,genotype_kid))
+
+
+pcs<-as.data.frame(read.delim("N:/durable/RAW/3.MoBa_genetics/p471/MoBaPsychGen_v1/MoBaPsychGen_v1-ec-eur-batch-basic-qc-cov-noMoBaIDs.txt",
+                              header=TRUE,sep="\t"))[,c("SENTRIXID","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9","PC10",
+                                                        "PC11","PC12","PC13","PC14","PC15","PC16","PC17","PC18","PC19","PC20")]
+names(pcs)<-c("sentrixid","pc01","pc02","pc03","pc04","pc05","pc06","pc07","pc08","pc09","pc10",
+              "pc11","pc12","pc13","pc14","pc15","pc16","pc17","pc18","pc19","pc20")
+pcs$sentrixid<-as.character(pcs$sentrixid)
+
+
+### MERGE DATABASES ###
+
+info<-read.spss("./PDB2374_SV_INFO_V12_20220824.sav",
+                use.value.labels=FALSE,to.data.frame=TRUE,allow="_")
+names(info)<-tolower(names(info))
+
+q1<-q1[,c("preg_id_2374","bmi_mom","smkinit_mom","eduyears_mom","parity",
+          "dep_bdx_q1","epi_bdx_q1","dep_dx_q1","epi_dx_q1",
+          "dep_tt_q1","epi_tt_q1")]
+q3<-q3[,c("preg_id_2374","dep_dx_q3","dep_tt_q3")]
+mbrn<-mbrn[,c("preg_id_2374","agedelivery_mom","birthweight","flerfodsel","sex_kid")]
+info<-info[,c("preg_id_2374","m_id_2374","f_id_2374")]
+
+dat<-merge(q1,q3,by="preg_id_2374",all.x=TRUE)
+dat<-merge(dat,mbrn,by="preg_id_2374",all.x=TRUE)
+dat<-merge(dat,info,by="preg_id_2374",all.x=TRUE)
+dat<-merge(dat,moms,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,dads,by="f_id_2374",all.x=TRUE)
+dat<-merge(dat,kids,by="preg_id_2374",all.x=TRUE)
+
+gen<-as.data.frame(read.delim("./genetic_data_marta.txt",header=TRUE,sep="\t"))
+namesgen<-names(gen)[2:26]
+names(gen)<-append("sentrixid_mom",paste(namesgen,"_mom",sep=""))
+dat<-merge(dat,gen,by="sentrixid_mom",all.x=TRUE)
+namespcs<-names(pcs)[2:21]
+names(pcs)<-append("sentrixid_mom",paste(namespcs,"_mom",sep=""))
+dat<-merge(dat,pcs,by="sentrixid_mom",all.x=TRUE)
+
+names(gen)<-append("sentrixid_dad",paste(namesgen,"_dad",sep=""))
+dat<-merge(dat,gen,by="sentrixid_dad",all.x=TRUE)
+names(pcs)<-append("sentrixid_dad",paste(namespcs,"_dad",sep=""))
+dat<-merge(dat,pcs,by="sentrixid_dad",all.x=TRUE)
+
+names(gen)<-append("sentrixid_kid",paste(namesgen,"_kid",sep=""))
+dat<-merge(dat,gen,by="sentrixid_kid",all.x=TRUE)
+names(pcs)<-append("sentrixid_kid",paste(namespcs,"_kid",sep=""))
+dat<-merge(dat,pcs,by="sentrixid_kid",all.x=TRUE)
+
+
+### EXCLUSIONS ###
+
+dat$flerfodsel<-with(dat,ifelse(is.na(flerfodsel),1,flerfodsel))
+dat<-dat[dat$flerfodsel==0,]
+dat$flerfodsel<-NULL
+
+# Keep only pregnancies with birthweight info (n = 99159)
+dat<-dat[!is.na(dat$birthweight),]
+
+dat$dep_tt_q3x<-with(dat,ifelse(is.na(dep_tt_q3),0,dep_tt_q3))
+dat$dep_tt_tot<-with(dat,ifelse(dep_tt_q1==1 | dep_tt_q3x==1,1,0))
+
+dat$dep_dx_q3x<-with(dat,ifelse(is.na(dep_dx_q3),0,dep_dx_q3))
+dat$dep_dx_tot<-with(dat,ifelse(dep_dx_q1==1 | dep_bdx_q1==1 | dep_dx_q3x==1,1,0))
+dat$anx_dx_tot<-with(dat,ifelse(anx_dx_q1==1 | anx_bdx_q1==1,1,0))
+dat$epi_dx_tot<-with(dat,ifelse(epi_dx_q1==1 | epi_bdx_q1==1,1,0))
+
+
+# Mothers with genotype data (n = 81189)
+dat$genotype_mom<-with(dat,ifelse(is.na(genotype_mom),0,genotype_mom))
+table(dat$genotype_mom)
+
+# Fathers with genotype data (n = 55427)
+dat$genotype_dad<-with(dat,ifelse(is.na(genotype_dad),0,genotype_dad))
+table(dat$genotype_dad)
+
+# Offspring with genotype data (n = 69828)
+dat$genotype_kid<-with(dat,ifelse(is.na(genotype_kid),0,genotype_kid))
+table(dat$genotype_kid)
+
+
+save(dat,file="./database_clean.RData")
