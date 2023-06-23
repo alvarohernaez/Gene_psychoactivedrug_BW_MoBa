@@ -18,7 +18,8 @@
 
 ## Syntax available
 Available files: 
-- making_data_analysis: preparation of database + analyses
+- making_data: preparation of database
+- analysis: gene-drug interaction analyses
 
 
 ## Citation
