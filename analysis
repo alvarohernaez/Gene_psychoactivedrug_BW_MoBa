@@ -1,0 +1,1869 @@
+rm(list=ls())
+
+library(foreign)
+library(dplyr)
+library(gdata)
+library(compareGroups)
+library(estimatr)
+library(lmtest)
+library(miceadds)
+library(ggplot2)
+
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data")
+
+
+### OTHER FUNCTIONS ###
+
+guapa<-function(x)
+{
+  redondeo<-ifelse(abs(x)<0.00001,signif(x,1),
+                   ifelse(abs(x)<0.0001,signif(x,1),
+                          ifelse(abs(x)<0.001,signif(x,1),
+                                 ifelse(abs(x)<0.1,sprintf("%.3f",round(x,3)),
+                                        ifelse(abs(x)<1,sprintf("%.2f",round(x,2)),
+                                               ifelse(abs(x)<10,sprintf("%.2f",round(x,2)),
+                                                      ifelse(abs(x)<100,sprintf("%.1f",round(x,1)),
+                                                             ifelse(abs(x)>=100,round(x,0),round(x,0)))))))))
+  return(redondeo)
+}
+
+ic_guapa<-function(x,y,z)
+{
+  ic<-paste(x," [",y,";",z,"]",sep="")
+  return(ic)
+}
+
+pval_guapa<-function(x)
+{
+  pval<-ifelse(x<0.00001,"<0.00001",
+               ifelse(x<0.001,"<0.001",round(x,3)))
+  return(pval)
+}
+
+mean_ic_guapa <- function(x, na.rm=FALSE) 
+{
+  if (na.rm) x <- na.omit(x)
+  se<-sqrt(var(x)/length(x))
+  z<-qnorm(1-0.05/2)
+  media<-mean(x)
+  ic95a<-guapa(media-(z*se))
+  ic95b<-guapa(media+(z*se))
+  media<-guapa(media)
+  ic_ok<-ic_guapa(media,ic95a,ic95b)
+  return(ic_ok)
+}
+
+mean_sd_guapa <- function(x) 
+{
+  media<-guapa(mean(x, na.rm=TRUE))
+  sd<-guapa(sd(x, na.rm=TRUE))
+  end<-paste(media," (",sd,")",sep="")
+  return(end)
+}
+
+beta_se_ic_guapa <- function(x, y) 
+{
+  z<-qnorm(1-0.05/2)
+  ic95a<-guapa(x-(z*y))
+  ic95b<-guapa(x+(z*y))
+  media<-guapa(x)
+  ic_ok<-ic_guapa(media,ic95a,ic95b)
+  return(ic_ok)
+}
+
+risk_se_ic_guapa <- function(x,y) 
+{
+  z<-qnorm(1-0.05/2)
+  hr<-guapa(exp(x))
+  ic95a<-guapa(exp(x-(z*y)))
+  ic95b<-guapa(exp(x+(z*y)))
+  ic_ok<-ic_guapa(hr,ic95a,ic95b)
+  return(ic_ok)
+}
+
+risk_se_ic_guapa2 <- function(x,y) 
+{
+  z<-qnorm(1-0.05/2)
+  hr<-round(exp(x),5)
+  ic95a<-round(exp(x-(z*y)),5)
+  ic95b<-round(exp(x+(z*y)),5)
+  ic_ok<-ic_guapa(hr,ic95a,ic95b)
+  return(ic_ok)
+}
+
+
+### DESCRIPTIVE OF POPULATION ###
+
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data")
+load("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data/database_clean.RData")
+
+mom_agedeliverymax<-dat[,c("m_id_2374","agedelivery_mom")]
+mom_agedeliverymax<-mom_agedeliverymax[order(mom_agedeliverymax$m_id_2374,-abs(mom_agedeliverymax$agedelivery_mom)),]
+mom_agedeliverymax<-mom_agedeliverymax[!duplicated(mom_agedeliverymax$m_id_2374),]
+mom_agedeliverymax<-rename.vars(mom_agedeliverymax,from=c("agedelivery_mom"),to=c("agedeliverymax_mom"))
+
+mom_bmimax<-dat[,c("m_id_2374","bmi_mom")]
+mom_bmimax<-mom_bmimax[order(mom_bmimax$m_id_2374,-abs(mom_bmimax$bmi_mom)),]
+mom_bmimax<-mom_bmimax[!duplicated(mom_bmimax$m_id_2374),]
+mom_bmimax<-rename.vars(mom_bmimax,from=c("bmi_mom"),to=c("bmimax_mom"))
+
+mom_eduyearsmax<-dat[,c("m_id_2374","eduyears_mom")]
+mom_eduyearsmax<-mom_eduyearsmax[order(mom_eduyearsmax$m_id_2374,-abs(mom_eduyearsmax$eduyears_mom)),]
+mom_eduyearsmax<-mom_eduyearsmax[!duplicated(mom_eduyearsmax$m_id_2374),]
+mom_eduyearsmax<-rename.vars(mom_eduyearsmax,from=c("eduyears_mom"),to=c("eduyearsmax_mom"))
+
+mom_smkinitmax<-dat[,c("m_id_2374","smkinit_mom")]
+mom_smkinitmax<-mom_smkinitmax[order(mom_smkinitmax$m_id_2374,-abs(mom_smkinitmax$smkinit_mom)),]
+mom_smkinitmax<-mom_smkinitmax[!duplicated(mom_smkinitmax$m_id_2374),]
+mom_smkinitmax<-rename.vars(mom_smkinitmax,from=c("smkinit_mom"),to=c("smkinitmax_mom"))
+
+mom_paritymax<-dat[,c("m_id_2374","parity")]
+mom_paritymax<-mom_paritymax[order(mom_paritymax$m_id_2374,-abs(mom_paritymax$parity)),]
+mom_paritymax<-mom_paritymax[!duplicated(mom_paritymax$m_id_2374),]
+mom_paritymax<-rename.vars(mom_paritymax,from=c("parity"),to=c("paritymax"))
+
+mom_miscarriagemax<-dat[,c("m_id_2374","miscarriage")]
+mom_miscarriagemax<-mom_miscarriagemax[order(mom_miscarriagemax$m_id_2374,-abs(mom_miscarriagemax$miscarriage)),]
+mom_miscarriagemax<-mom_miscarriagemax[!duplicated(mom_miscarriagemax$m_id_2374),]
+mom_miscarriagemax<-rename.vars(mom_miscarriagemax,from=c("miscarriage"),to=c("miscarriagemax"))
+
+mom_dep_dx_tot<-dat[,c("m_id_2374","dep_dx_tot")]
+mom_dep_dx_tot<-mom_dep_dx_tot[order(mom_dep_dx_tot$m_id_2374,-abs(mom_dep_dx_tot$dep_dx_tot)),]
+mom_dep_dx_tot<-mom_dep_dx_tot[!duplicated(mom_dep_dx_tot$m_id_2374),]
+mom_dep_dx_tot<-rename.vars(mom_dep_dx_tot,from=c("dep_dx_tot"),to=c("dep_dx_tot_max"))
+
+mom_dep_tt_tot<-dat[,c("m_id_2374","dep_tt_tot")]
+mom_dep_tt_tot<-mom_dep_tt_tot[order(mom_dep_tt_tot$m_id_2374,-abs(mom_dep_tt_tot$dep_tt_tot)),]
+mom_dep_tt_tot<-mom_dep_tt_tot[!duplicated(mom_dep_tt_tot$m_id_2374),]
+mom_dep_tt_tot<-rename.vars(mom_dep_tt_tot,from=c("dep_tt_tot"),to=c("dep_tt_tot_max"))
+
+mom_anx_dx_q1<-dat[,c("m_id_2374","anx_dx_q1")]
+mom_anx_dx_q1<-mom_anx_dx_q1[order(mom_anx_dx_q1$m_id_2374,-abs(mom_anx_dx_q1$anx_dx_q1)),]
+mom_anx_dx_q1<-mom_anx_dx_q1[!duplicated(mom_anx_dx_q1$m_id_2374),]
+mom_anx_dx_q1<-rename.vars(mom_anx_dx_q1,from=c("anx_dx_q1"),to=c("anx_dx_q1_max"))
+
+mom_anx_tt_q1<-dat[,c("m_id_2374","anx_tt_q1")]
+mom_anx_tt_q1<-mom_anx_tt_q1[order(mom_anx_tt_q1$m_id_2374,-abs(mom_anx_tt_q1$anx_tt_q1)),]
+mom_anx_tt_q1<-mom_anx_tt_q1[!duplicated(mom_anx_tt_q1$m_id_2374),]
+mom_anx_tt_q1<-rename.vars(mom_anx_tt_q1,from=c("anx_tt_q1"),to=c("anx_tt_q1_max"))
+
+mom_dep_anx_dx_tot<-dat[,c("m_id_2374","dep_anx_dx_tot")]
+mom_dep_anx_dx_tot<-mom_dep_anx_dx_tot[order(mom_dep_anx_dx_tot$m_id_2374,-abs(mom_dep_anx_dx_tot$dep_anx_dx_tot)),]
+mom_dep_anx_dx_tot<-mom_dep_anx_dx_tot[!duplicated(mom_dep_anx_dx_tot$m_id_2374),]
+mom_dep_anx_dx_tot<-rename.vars(mom_dep_anx_dx_tot,from=c("dep_anx_dx_tot"),to=c("dep_anx_dx_tot_max"))
+
+mom_dep_anx_tt_tot<-dat[,c("m_id_2374","dep_anx_tt_tot")]
+mom_dep_anx_tt_tot<-mom_dep_anx_tt_tot[order(mom_dep_anx_tt_tot$m_id_2374,-abs(mom_dep_anx_tt_tot$dep_anx_tt_tot)),]
+mom_dep_anx_tt_tot<-mom_dep_anx_tt_tot[!duplicated(mom_dep_anx_tt_tot$m_id_2374),]
+mom_dep_anx_tt_tot<-rename.vars(mom_dep_anx_tt_tot,from=c("dep_anx_tt_tot"),to=c("dep_anx_tt_tot_max"))
+
+mom_epi_dx_q1<-dat[,c("m_id_2374","epi_dx_q1")]
+mom_epi_dx_q1<-mom_epi_dx_q1[order(mom_epi_dx_q1$m_id_2374,-abs(mom_epi_dx_q1$epi_dx_q1)),]
+mom_epi_dx_q1<-mom_epi_dx_q1[!duplicated(mom_epi_dx_q1$m_id_2374),]
+mom_epi_dx_q1<-rename.vars(mom_epi_dx_q1,from=c("epi_dx_q1"),to=c("epi_dx_q1_max"))
+
+mom_epi_tt_q1<-dat[,c("m_id_2374","epi_tt_q1")]
+mom_epi_tt_q1<-mom_epi_tt_q1[order(mom_epi_tt_q1$m_id_2374,-abs(mom_epi_tt_q1$epi_tt_q1)),]
+mom_epi_tt_q1<-mom_epi_tt_q1[!duplicated(mom_epi_tt_q1$m_id_2374),]
+mom_epi_tt_q1<-rename.vars(mom_epi_tt_q1,from=c("epi_tt_q1"),to=c("epi_tt_q1_max"))
+
+
+dat<-merge(dat,mom_agedeliverymax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_bmimax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_eduyearsmax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_smkinitmax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_paritymax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_miscarriagemax,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_dep_dx_tot,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_dep_tt_tot,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_anx_dx_q1,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_anx_tt_q1,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_dep_anx_dx_tot,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_dep_anx_tt_tot,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_epi_dx_q1,by="m_id_2374",all.x=TRUE)
+dat<-merge(dat,mom_epi_tt_q1,by="m_id_2374",all.x=TRUE)
+
+
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Results")
+
+datx<-dat[!duplicated(dat$m_id_2374),]
+xxx<-datx[,c("agedeliverymax_mom","eduyearsmax_mom","bmimax_mom","smkinitmax_mom","paritymax","miscarriagemax",
+            "dep_dx_tot_max","dep_tt_tot_max","anx_dx_q1_max","anx_tt_q1_max",
+            "dep_anx_dx_tot_max","dep_anx_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
+xxx$sel<-1
+all<-NULL
+all<-createTable(compareGroups(sel~.,
+                               xxx, method=c("bmimax_mom"=2,"smkinitmax_mom"=3,"paritymax"=3,"miscarriagemax"=3,
+                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"anx_dx_q1_max"=3,"anx_tt_q1_max"=3,
+                                            "dep_anx_dx_tot_max"=3,"dep_anx_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
+                 show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
+
+tab1<-NULL
+tab1<-as.data.frame(cbind(all$descr))
+colnames(tab1)<-c("Mothers-All","N")
+write.table(tab1,file="./descriptive_mothers.csv",sep=";",col.names=NA)
+
+
+datx<-dat[!duplicated(dat$m_id_2374) & dat$genotype_mom==1,]
+xxx<-datx[,c("agedeliverymax_mom","eduyearsmax_mom","bmimax_mom","smkinitmax_mom","paritymax","miscarriagemax",
+            "dep_dx_tot_max","dep_tt_tot_max","anx_dx_q1_max","anx_tt_q1_max",
+            "dep_anx_dx_tot_max","dep_anx_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
+xxx$sel<-1
+all<-NULL
+all<-createTable(compareGroups(sel~.,
+                               xxx, method=c("bmimax_mom"=2,"smkinitmax_mom"=3,"paritymax"=3,"miscarriagemax"=3,
+                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"anx_dx_q1_max"=3,"anx_tt_q1_max"=3,
+                                            "dep_anx_dx_tot_max"=3,"dep_anx_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
+                 show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
+
+tab1<-NULL
+tab1<-as.data.frame(cbind(all$descr))
+colnames(tab1)<-c("Mothers-All","N")
+write.table(tab1,file="./descriptive_mothers_genotype.csv",sep=";",col.names=NA)
+
+
+# DESCRIPTIVE OF PREGNANCIES #
+
+datx<-dat
+xxx<-datx[,c("agedelivery_mom","eduyears_mom","bmi_mom","smkinit_mom","parity","miscarriage",
+            "preterm","preterm_sp","sga","lga","birthweight","sex_kid",
+            "dep_dx_tot","dep_tt_tot","anx_dx_q1","anx_tt_q1","dep_anx_dx_tot","dep_anx_tt_tot","epi_dx_q1","epi_tt_q1")]
+xxx$sel<-1
+all<-NULL
+all<-createTable(compareGroups(sel~.,
+                               xxx, method=c("bmi_mom"=2,"smkinit_mom"=3,"parity"=3,"miscarriage"=3,
+                                            "preterm"=3,"preterm_sp"=3,"sga"=3,"lga"=3,"sex_kid"=3,
+                                            "dep_dx_tot"=3,"anx_dx_q1"=3,"dep_anx_dx_tot"=3,"epi_dx_q1"=3,
+                                            "dep_tt_tot"=3,"anx_tt_q1"=3,"dep_anx_tt_tot"=3,"epi_tt_q1"=3)),
+                 show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
+
+tab1<-NULL
+tab1<-as.data.frame(cbind(all$descr))
+colnames(tab1)<-c("Pregnancies-All","N")
+write.table(tab1,file="./descriptive_pregnancies.csv",sep=";",col.names=NA)
+
+
+datx<-dat[dat$genotype_kid==1,]
+xxx<-datx[,c("agedelivery_mom","eduyears_mom","bmi_mom","smkinit_mom","parity","miscarriage",
+            "preterm","preterm_sp","sga","lga","birthweight","sex_kid",
+            "dep_dx_tot","dep_tt_tot","anx_dx_q1","anx_tt_q1","dep_anx_dx_tot","dep_anx_tt_tot","epi_dx_q1","epi_tt_q1")]
+xxx$sel<-1
+all<-NULL
+all<-createTable(compareGroups(sel~.,
+                               xxx, method=c("bmi_mom"=2,"smkinit_mom"=3,"parity"=3,"miscarriage"=3,
+                                            "preterm"=3,"preterm_sp"=3,"sga"=3,"lga"=3,"sex_kid"=3,
+                                            "dep_dx_tot"=3,"anx_dx_q1"=3,"dep_anx_dx_tot"=3,"epi_dx_q1"=3,
+                                            "dep_tt_tot"=3,"anx_tt_q1"=3,"dep_anx_tt_tot"=3,"epi_tt_q1"=3)),
+                 show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
+
+tab1<-NULL
+tab1<-as.data.frame(cbind(all$descr))
+colnames(tab1)<-c("Pregnancies-All","N")
+write.table(tab1,file="./descriptive_pregnancies_genotype_kids.csv",sep=";",col.names=NA)
+
+
+############################
+### INTERACTION ANALYSES ###
+############################
+
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data")
+load("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Data/database_clean.RData")
+setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Results")
+
+z<-qnorm(1-0.05/2)
+
+
+### CALCULATION OF RISK SCORE ###
+
+vars01<-c("rs717620_C_mom","rs717620_C_dad", "rs717620_C_kid",
+          "rs10245483_G_mom", "rs10245483_G_dad", "rs10245483_G_kid",
+          "rs2231142_G_mom","rs2231142_G_dad","rs2231142_G_kid",
+          "rs3114020_T_mom","rs3114020_T_dad","rs3114020_T_kid",
+          "rs28401781_C_mom","rs28401781_C_dad","rs28401781_C_kid",
+          "rs2235067_C_mom","rs2235067_C_dad","rs2235067_C_kid",
+          "rs4148740_A_mom","rs4148740_A_dad","rs4148740_A_kid",
+          "rs10280101_A_mom","rs10280101_A_dad","rs10280101_A_kid",
+          "rs7787082_G_mom","rs7787082_G_dad","rs7787082_G_kid",
+          "rs2032583_A_mom","rs2032583_A_dad","rs2032583_A_kid",
+          "rs4148739_T_mom","rs4148739_T_dad","rs4148739_T_kid",
+          "rs11983225_T_mom","rs11983225_T_dad","rs11983225_T_kid",
+          "rs10248420_A_mom","rs10248420_A_dad","rs10248420_A_kid",
+          "rs2235040_C_mom","rs2235040_C_dad","rs2235040_C_kid",
+          "rs12720067_C_mom","rs12720067_C_dad","rs12720067_C_kid",
+          "rs2235015_C_mom","rs2235015_C_dad","rs2235015_C_kid",
+          "rs9282564_T_mom","rs9282564_T_dad","rs9282564_T_kid",
+          "rs4148386_A_mom","rs4148386_A_dad","rs4148386_A_kid",
+          "rs2273697_G_mom","rs2273697_G_dad","rs2273697_G_kid",
+          "rs875740_A_mom","rs875740_A_dad","rs875740_A_kid",
+          "rs212090_T_mom","rs212090_T_dad","rs212090_T_kid",
+          "rs1045642_A_mom","rs1045642_A_dad","rs1045642_A_kid",
+          "rs1128503_G_mom","rs1128503_G_dad","rs1128503_G_kid", 
+          "rs3740066_C_mom","rs3740066_C_dad","rs3740066_C_kid")
+vars02<-c("rs717620_T_mom","rs717620_T_dad","rs717620_T_kid",
+          "rs10245483_T_mom", "rs10245483_T_dad", "rs10245483_T_kid",
+          "rs2231142_T_mom","rs2231142_T_dad","rs2231142_T_kid",
+          "rs3114020_C_mom","rs3114020_C_dad","rs3114020_C_kid",
+          "rs28401781_T_mom","rs28401781_T_dad","rs28401781_T_kid",
+          "rs2235067_T_mom","rs2235067_T_dad","rs2235067_T_kid",
+          "rs4148740_G_mom","rs4148740_G_dad","rs4148740_G_kid",
+          "rs10280101_C_mom","rs10280101_C_dad","rs10280101_C_kid",
+          "rs7787082_A_mom","rs7787082_A_dad","rs7787082_A_kid",
+          "rs2032583_G_mom","rs2032583_G_dad","rs2032583_G_kid",
+          "rs4148739_C_mom","rs4148739_C_dad","rs4148739_C_kid",
+          "rs11983225_C_mom","rs11983225_C_dad","rs11983225_C_kid",
+          "rs10248420_G_mom","rs10248420_G_dad","rs10248420_G_kid",
+          "rs2235040_T_mom","rs2235040_T_dad","rs2235040_T_kid",
+          "rs12720067_T_mom","rs12720067_T_dad","rs12720067_T_kid",
+          "rs2235015_A_mom","rs2235015_A_dad","rs2235015_A_kid",
+          "rs9282564_G_mom","rs9282564_G_dad","rs9282564_G_kid",
+          "rs4148386_G_mom","rs4148386_G_dad","rs4148386_G_kid",
+          "rs2273697_A_mom","rs2273697_A_dad","rs2273697_A_kid",
+          "rs875740_C_mom","rs875740_C_dad","rs875740_C_kid",
+          "rs212090_A_mom","rs212090_A_dad","rs212090_A_kid",
+          "rs1045642_G_mom","rs1045642_G_dad","rs1045642_G_kid",
+          "rs1128503_A_mom","rs1128503_A_dad","rs1128503_A_kid", 
+          "rs3740066_T_mom","rs3740066_T_dad","rs3740066_T_kid")
+
+for(i in 1:length(vars01))
+{
+  dat[,vars02[i]]<-with(dat,ifelse(is.na(dat[,vars01[i]]),NA,
+                                   ifelse(dat[,vars01[i]]==0,2,
+                                          ifelse(dat[,vars01[i]]==1,1,
+                                                 ifelse(dat[,vars01[i]]==2,0,NA)))))
+}
+
+
+dat$score_abcb1_mom<-with(dat,rs10245483_G_mom + rs10248420_G_mom + rs10280101_C_mom + rs2235015_A_mom + rs9282564_G_mom + rs1045642_G_mom + rs1128503_G_mom)
+dat$score_abcb1_kid<-with(dat,rs10245483_G_kid + rs10248420_G_kid + rs10280101_C_kid + rs2235015_A_kid + rs9282564_G_kid + rs1045642_G_kid + rs1128503_G_kid)
+dat$score_abcc1_mom<-with(dat,rs212090_A_mom + rs875740_C_mom)
+dat$score_abcc1_kid<-with(dat,rs212090_A_kid + rs875740_C_kid)
+dat$score_abcc2_mom<-with(dat,rs2273697_G_mom + rs3740066_C_mom + rs717620_C_mom )
+dat$score_abcc2_kid<-with(dat,rs2273697_G_kid + rs3740066_C_kid + rs717620_C_kid)
+dat$score_abcg2_mom<-with(dat,rs2231142_T_mom + rs3114020_C_mom)
+dat$score_abcg2_kid<-with(dat,rs2231142_T_kid + rs3114020_C_kid)
+
+
+### ASSOCIATION EXPOSURE-OUTCOME ###
+
+vars01<-c("dep_dx_tot","dep_tt_tot","epi_dx_q1","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_mom==1,]
+  mod01<-lm_robust(birthweight~as.factor(datx[,vars01[i]])
+                   +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                   data=datx, clusters=m_id_2374, se_type="stata")
+  
+  beta01<-summary(mod01)$coefficients[2,1]
+  se01<-summary(mod01)$coefficients[2,2]
+  ic95lo01<-beta01-(z*se01)
+  ic95hi01<-beta01+(z*se01)
+  coef01<-beta_se_ic_guapa(beta01,se01)
+  pval01<-pval_guapa(summary(mod01)$coefficients[2,4])
+
+  tab<-rbind(tab,cbind(coef01,pval01,beta01,ic95lo01,ic95hi01))
+}
+
+colnames(tab)<-c("Diff.","p-value","Beta","IC95_lo","IC95_hi")
+rownames(tab)<-vars01
+write.table(tab,file="./assoc_exp_outc.csv",sep=";",col.names=NA)
+
+
+############################################
+### INTERACTION ANALYSES - MOTHERS-#########
+############################################
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
+
+
+### ABCB1_ANALYSIS_MOTHER ###
+
+tab<-NULL
+for(i in 1:length(vars01))
+  
+{
+  
+  for(j in 1:length(vars02))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]+datx[,vars01[i]]*datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi","epi","epi","epi","epi","epi")
+varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom",
+         "rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_pvaluesonly_abcb1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(j in 1:length(vars02))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]+datx[,vars01[i]]*datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars02[j]]==0,]
+    mod0<-lm_robust(birthweight~as.factor(dat0[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat0, clusters=m_id_2374, se_type="stata")
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars02[j]]==1,]
+    mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat1, clusters=m_id_2374, se_type="stata")
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars02[j]]==2,]
+    mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat2, clusters=m_id_2374, se_type="stata")
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+  }
+}
+
+varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+        "epi","epi","epi","epi","epi","epi","epi")
+varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom",
+         "rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_snps_abcb1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_mom==1,]
+  
+  datx$score_mom_q<-cut(datx$score_abcb1_mom,quantile(datx$score_abcb1_mom,na.rm=TRUE),include.lowest=TRUE,labels=FALSE)
+  
+  dat1<-datx[datx$score_mom_q==1,]
+  mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat1, clusters=m_id_2374, se_type="stata")
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef1<-beta_se_ic_guapa(beta1,se1)
+  pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_mom_q==2,]
+  mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat2, clusters=m_id_2374, se_type="stata")
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef2<-beta_se_ic_guapa(beta2,se2)
+  pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_mom_q==3,]
+  mod3<-lm_robust(birthweight~as.factor(dat3[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat3, clusters=m_id_2374, se_type="stata")
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef3<-beta_se_ic_guapa(beta3,se3)
+  pval3<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_mom_q==4,]
+  mod4<-lm_robust(birthweight~as.factor(dat4[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat4, clusters=m_id_2374, se_type="stata")
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef4<-beta_se_ic_guapa(beta4,se4)
+  pval4<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_mothers_score_abcb1.csv",sep=";",col.names=NA)
+
+
+### ABCC1_ANALYSIS_MOTHER ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(k in 1:length(vars03))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]+datx[,vars01[i]]*datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi")
+varsY<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom",
+         "rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_pvaluesonly_abcc1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars03<-c("rs212090_A_mom" , "rs875740_C_mom")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(k in 1:length(vars03))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]+datx[,vars01[i]]*datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars03[k]]==0,]
+    mod0<-lm_robust(birthweight~as.factor(dat0[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat0, clusters=m_id_2374, se_type="stata")
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars03[k]]==1,]
+    mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat1, clusters=m_id_2374, se_type="stata")
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars03[k]]==2,]
+    mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat2, clusters=m_id_2374, se_type="stata")
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+    }
+}
+
+varsX<-c("dep_anx","dep_anx",
+         "epi","epi")
+varsY<-c("rs212090_A_mom","rs875740_C_mom",
+         "rs212090_A_mom","rs875740_C_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_snps_abcc1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_mom==1,]
+  
+  datx$score_mom_q<-datx$score_abcc1_mom
+  
+  dat1<-datx[datx$score_mom_q==0,]
+  mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat1, clusters=m_id_2374, se_type="stata")
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef0<-beta_se_ic_guapa(beta1,se1)
+  pval0<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_mom_q==1,]
+  mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat2, clusters=m_id_2374, se_type="stata")
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef1<-beta_se_ic_guapa(beta2,se2)
+  pval1<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_mom_q==2,]
+  mod3<-lm_robust(birthweight~as.factor(dat3[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat3, clusters=m_id_2374, se_type="stata")
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef2<-beta_se_ic_guapa(beta3,se3)
+  pval2<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_mom_q==3,]
+  mod4<-lm_robust(birthweight~as.factor(dat4[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat4, clusters=m_id_2374, se_type="stata")
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef3<-beta_se_ic_guapa(beta4,se4)
+  pval3<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  dat5<-datx[datx$score_mom_q==4,]
+  mod5<-lm_robust(birthweight~as.factor(dat5[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat5, clusters=m_id_2374, se_type="stata")
+  beta5<-summary(mod5)$coefficients[2,1]
+  se5<-summary(mod5)$coefficients[2,2]
+  ic95lo5<-beta5-(z*se5)
+  ic95hi5<-beta5+(z*se5)
+  coef4<-beta_se_ic_guapa(beta5,se5)
+  pval4<-pval_guapa(summary(mod5)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef0,pval0,coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4,beta5,ic95lo5,ic95hi5))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_mothers_score_abcc1.csv",sep=";",col.names=NA)
+
+
+### ABCC2_ANALYSIS_MOTHER ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
+
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(m in 1:length(vars04))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]+datx[,vars01[i]]*datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx", "dep_anx",
+         "epi","epi","epi", "epi")
+varsY<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom",
+         "rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_pvaluesonly_abcc2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(m in 1:length(vars04))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]+datx[,vars01[i]]*datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars04[m]]==0,]
+    mod0<-lm_robust(birthweight~as.factor(dat0[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat0, clusters=m_id_2374, se_type="stata")
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars04[m]]==1,]
+    mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat1, clusters=m_id_2374, se_type="stata")
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars04[m]]==2,]
+    mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat2, clusters=m_id_2374, se_type="stata")
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+    
+  }
+}
+
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi", "epi")
+varsY<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom",
+         "rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_snps_abcc2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_mom==1,]
+  
+  datx$score_mom_q<-datx$score_abcc2_mom
+  
+  dat1<-datx[datx$score_mom_q==2,]
+  mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat1, clusters=m_id_2374, se_type="stata")
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef2<-beta_se_ic_guapa(beta1,se1)
+  pval2<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_mom_q==3,]
+  mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat2, clusters=m_id_2374, se_type="stata")
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef3<-beta_se_ic_guapa(beta2,se2)
+  pval3<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_mom_q==4,]
+  mod3<-lm_robust(birthweight~as.factor(dat3[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat3, clusters=m_id_2374, se_type="stata")
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef4<-beta_se_ic_guapa(beta3,se3)
+  pval4<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_mom_q==5,]
+  mod4<-lm_robust(birthweight~as.factor(dat4[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat4, clusters=m_id_2374, se_type="stata")
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef5<-beta_se_ic_guapa(beta4,se4)
+  pval5<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  dat5<-datx[datx$score_mom_q==6,]
+  mod5<-lm_robust(birthweight~as.factor(dat5[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat5, clusters=m_id_2374, se_type="stata")
+  beta5<-summary(mod5)$coefficients[2,1]
+  se5<-summary(mod5)$coefficients[2,2]
+  ic95lo5<-beta5-(z*se5)
+  ic95hi5<-beta5+(z*se5)
+  coef6<-beta_se_ic_guapa(beta5,se5)
+  pval6<-pval_guapa(summary(mod5)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef2,pval2,coef3,pval3,coef4,pval4,coef5,pval5,coef6,pval6,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4,beta5,ic95lo5,ic95hi5))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_mothers_score_abcc2.csv",sep=";",col.names=NA)
+
+
+### ABCG2_ANALYSIS_MOTHER ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
+
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(n in 1:length(vars05))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]+datx[,vars01[i]]*datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi")
+varsY<-c("rs2231142_T_mom","rs3114020_C_mom","score_abcg2_mom",
+         "rs2231142_T_mom","rs3114020_C_mom","score_abcg2_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_pvaluesonly_abcg2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(n in 1:length(vars05))
+    
+  {
+    datx<-dat[dat$genotype_mom==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]+datx[,vars01[i]]*datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_mom+pc02_mom+pc03_mom+pc04_mom+pc05_mom+pc06_mom+pc07_mom+pc08_mom+pc09_mom+pc10_mom
+              +pc11_mom+pc12_mom+pc13_mom+pc14_mom+pc15_mom+pc16_mom+pc17_mom+pc18_mom+pc19_mom+pc20_mom+as.factor(batch_mom), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars05[n]]==0,]
+    mod0<-lm_robust(birthweight~as.factor(dat0[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat0, clusters=m_id_2374, se_type="stata")
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars05[n]]==1,]
+    mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat1, clusters=m_id_2374, se_type="stata")
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars05[n]]==2,]
+    mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                    +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                    data=dat2, clusters=m_id_2374, se_type="stata")
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+  }
+}
+
+varsX<-c("dep_anx","dep_anx",
+         "epi","epi")
+varsY<-c("rs2231142_T_mom",  "rs3114020_C_mom",
+         "rs2231142_T_mom",  "rs3114020_C_mom")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_mothers_snps_abcg2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_mom==1,]
+  
+  datx$score_mom_q<-datx$score_abcg2_mom
+  
+  dat1<-datx[datx$score_mom_q==0,]
+  mod1<-lm_robust(birthweight~as.factor(dat1[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat1, clusters=m_id_2374, se_type="stata")
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef0<-beta_se_ic_guapa(beta1,se1)
+  pval0<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_mom_q==1,]
+  mod2<-lm_robust(birthweight~as.factor(dat2[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat2, clusters=m_id_2374, se_type="stata")
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef1<-beta_se_ic_guapa(beta2,se2)
+  pval1<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_mom_q==2,]
+  mod3<-lm_robust(birthweight~as.factor(dat3[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat3, clusters=m_id_2374, se_type="stata")
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef2<-beta_se_ic_guapa(beta3,se3)
+  pval2<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_mom_q==3,]
+  mod4<-lm_robust(birthweight~as.factor(dat4[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat4, clusters=m_id_2374, se_type="stata")
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef3<-beta_se_ic_guapa(beta4,se4)
+  pval3<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  dat5<-datx[datx$score_mom_q==4,]
+  mod5<-lm_robust(birthweight~as.factor(dat5[,vars01[i]])
+                  +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+                  data=dat5, clusters=m_id_2374, se_type="stata")
+  beta5<-summary(mod5)$coefficients[2,1]
+  se5<-summary(mod5)$coefficients[2,2]
+  ic95lo5<-beta5-(z*se5)
+  ic95hi5<-beta5+(z*se5)
+  coef4<-beta_se_ic_guapa(beta5,se5)
+  pval4<-pval_guapa(summary(mod5)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef0,pval0,coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4,beta5,ic95lo5,ic95hi5))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_mothers_score_abcg2.csv",sep=";",col.names=NA)
+
+
+########################################
+### INTERACTION ANALYSES - OFFSPRING ###
+########################################
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
+vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
+vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+
+
+### ABCB1_ANALYSIS_OFFSPRING ###
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(j in 1:length(vars02))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]+datx[,vars01[i]]*datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi","epi","epi","epi","epi","epi")
+varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid",
+         "rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_pvaluesonly_abcb1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(j in 1:length(vars02))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars02[j]]+datx[,vars01[i]]*datx[,vars02[j]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+
+    dat0<-datx[datx[,vars02[j]]==0,]
+    mod0<-lm(birthweight~as.factor(dat0[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat0)
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars02[j]]==1,]
+    mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat1)
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars02[j]]==2,]
+    mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat2)
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+  }
+}
+
+varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi","epi","epi","epi","epi")
+varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid",
+         "rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_snps_abcb1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_kid==1,]
+  
+  datx$score_kid_q<-as.numeric(ntile(datx$score_abcb1_kid, 4))
+  
+  dat1<-datx[datx$score_kid_q==1,]
+  mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat1)
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef1<-beta_se_ic_guapa(beta1,se1)
+  pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_kid_q==2,]
+  mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat2)
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef2<-beta_se_ic_guapa(beta2,se2)
+  pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_kid_q==3,]
+  mod3<-lm(birthweight~as.factor(dat3[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat3)
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef3<-beta_se_ic_guapa(beta3,se3)
+  pval3<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_kid_q==4,]
+  mod4<-lm(birthweight~as.factor(dat4[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat4)
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef4<-beta_se_ic_guapa(beta4,se4)
+  pval4<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_offspring_score_abcb1.csv",sep=";",col.names=NA)
+
+
+### ABCC1_ANALYSIS_OFFSPRING ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
+vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
+vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(k in 1:length(vars03))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]+datx[,vars01[i]]*datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi")
+varsY<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid",
+         "rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_pvaluesonly_abcc1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars03<-c("rs212090_A_kid" , "rs875740_C_kid")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(k in 1:length(vars03))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars03[k]]+datx[,vars01[i]]*datx[,vars03[k]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars03[k]]==0,]
+    mod0<-lm(birthweight~as.factor(dat0[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat0)
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars03[k]]==1,]
+    mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat1)
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars03[k]]==2,]
+    mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat2)
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+  }
+}
+
+varsX<-c("dep_anx","dep_anx",
+         "epi","epi")
+varsY<-c("rs212090_A_kid","rs875740_C_kid",
+         "rs212090_A_kid","rs875740_C_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_snps_abcc1.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_kid==1,]
+  
+  datx$score_kid_q<-as.numeric(ntile(datx$score_abcc1_kid, 4))
+  
+  dat1<-datx[datx$score_kid_q==1,]
+  mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat1)
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef1<-beta_se_ic_guapa(beta1,se1)
+  pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_kid_q==2,]
+  mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat2)
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef2<-beta_se_ic_guapa(beta2,se2)
+  pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_kid_q==3,]
+  mod3<-lm(birthweight~as.factor(dat3[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat3)
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef3<-beta_se_ic_guapa(beta3,se3)
+  pval3<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_kid_q==4,]
+  mod4<-lm(birthweight~as.factor(dat4[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat4)
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef4<-beta_se_ic_guapa(beta4,se4)
+  pval4<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_offspring_score_abcc1.csv",sep=";",col.names=NA)
+
+
+### ABCC2_ANALYSIS_OFFSPRING ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
+vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
+vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(m in 1:length(vars04))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]+datx[,vars01[i]]*datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx", "dep_anx",
+         "epi","epi","epi", "epi")
+varsY<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid",
+         "rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_pvaluesonly_abcc2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars04<-c("rs2273697_A_kid", "rs3740066_C_kid",  "rs717620_C_kid")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(m in 1:length(vars04))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars04[m]]+datx[,vars01[i]]*datx[,vars04[m]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars04[m]]==0,]
+    mod0<-lm(birthweight~as.factor(dat0[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat0)
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars04[m]]==1,]
+    mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat1)
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars04[m]]==2,]
+    mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat2)
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+  }
+}
+
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi", "epi")
+varsY<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid",
+         "rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_snps_abcc2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_kid==1,]
+  
+  datx$score_kid_q<-as.numeric(ntile(datx$score_abcc2_kid, 4))
+  
+  dat1<-datx[datx$score_kid_q==1,]
+  mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat1)
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef1<-beta_se_ic_guapa(beta1,se1)
+  pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_kid_q==2,]
+  mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat2)
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef2<-beta_se_ic_guapa(beta2,se2)
+  pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_kid_q==3,]
+  mod3<-lm(birthweight~as.factor(dat3[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat3)
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef3<-beta_se_ic_guapa(beta3,se3)
+  pval3<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_kid_q==4,]
+  mod4<-lm(birthweight~as.factor(dat4[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat4)
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef4<-beta_se_ic_guapa(beta4,se4)
+  pval4<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_offspring_score_abcc2.csv",sep=";",col.names=NA)
+
+
+### ABCG2_ANALYSIS_OFFSPRING ###
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
+vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
+vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(n in 1:length(vars05))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]+datx[,vars01[i]]*datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    tab<-rbind(tab,cbind(p_lrtest01))
+  }
+}
+
+colnames(tab)<-c("Interaction")
+varsX<-c("dep_anx","dep_anx","dep_anx",
+         "epi","epi","epi")
+varsY<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid",
+         "rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_pvaluesonly_abcg2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  
+  for(n in 1:length(vars05))
+    
+  {
+    datx<-dat[dat$genotype_kid==1,]
+    
+    mod01<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    mod02<-lm(birthweight~as.factor(datx[,vars01[i]])+datx[,vars05[n]]+datx[,vars01[i]]*datx[,vars05[n]]
+              +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid)
+              +pc01_kid+pc02_kid+pc03_kid+pc04_kid+pc05_kid+pc06_kid+pc07_kid+pc08_kid+pc09_kid+pc10_kid
+              +pc11_kid+pc12_kid+pc13_kid+pc14_kid+pc15_kid+pc16_kid+pc17_kid+pc18_kid+pc19_kid+pc20_kid+as.factor(batch_kid), 
+              data=datx)
+    p_lrtest01<-pval_guapa(lrtest(mod01,mod02)[2,5])
+    
+    dat0<-datx[datx[,vars05[n]]==0,]
+    mod0<-lm(birthweight~as.factor(dat0[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat0)
+    beta0<-summary(mod0)$coefficients[2,1]
+    se0<-summary(mod0)$coefficients[2,2]
+    ic95lo0<-beta0-(z*se0)
+    ic95hi0<-beta0+(z*se0)
+    coef0<-beta_se_ic_guapa(beta0,se0)
+    pval0<-pval_guapa(summary(mod0)$coefficients[2,4])
+    
+    dat1<-datx[datx[,vars05[n]]==1,]
+    mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat1)
+    beta1<-summary(mod1)$coefficients[2,1]
+    se1<-summary(mod1)$coefficients[2,2]
+    ic95lo1<-beta1-(z*se1)
+    ic95hi1<-beta1+(z*se1)
+    coef1<-beta_se_ic_guapa(beta1,se1)
+    pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+    
+    dat2<-datx[datx[,vars05[n]]==2,]
+    mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+             +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+             data=dat2)
+    beta2<-summary(mod2)$coefficients[2,1]
+    se2<-summary(mod2)$coefficients[2,2]
+    ic95lo2<-beta2-(z*se2)
+    ic95hi2<-beta2+(z*se2)
+    coef2<-beta_se_ic_guapa(beta2,se2)
+    pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+    
+    tab<-rbind(tab,cbind(p_lrtest01,coef0,pval0,coef1,pval1,coef2,pval2,
+                         beta0,ic95lo0,ic95hi0,beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2))
+    }
+}
+
+varsX<-c("dep_anx","dep_anx",
+         "epi","epi")
+varsY<-c("rs2231142_T_kid",  "rs3114020_C_kid",
+         "rs2231142_T_kid",  "rs3114020_C_kid")
+
+rownames(tab)<-paste(varsX,varsY,sep="_")
+write.table(tab,file="./interaction_offspring_snps_abcg2.csv",sep=";",col.names=NA)
+
+
+vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+
+tab<-NULL
+
+for(i in 1:length(vars01))
+  
+{
+  datx<-dat[dat$genotype_kid==1,]
+  
+  datx$score_kid_q<-as.numeric(ntile(datx$score_abcg2_kid, 4))
+  
+  dat1<-datx[datx$score_kid_q==1,]
+  mod1<-lm(birthweight~as.factor(dat1[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat1)
+  beta1<-summary(mod1)$coefficients[2,1]
+  se1<-summary(mod1)$coefficients[2,2]
+  ic95lo1<-beta1-(z*se1)
+  ic95hi1<-beta1+(z*se1)
+  coef1<-beta_se_ic_guapa(beta1,se1)
+  pval1<-pval_guapa(summary(mod1)$coefficients[2,4])
+  
+  dat2<-datx[datx$score_kid_q==2,]
+  mod2<-lm(birthweight~as.factor(dat2[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat2)
+  beta2<-summary(mod2)$coefficients[2,1]
+  se2<-summary(mod2)$coefficients[2,2]
+  ic95lo2<-beta2-(z*se2)
+  ic95hi2<-beta2+(z*se2)
+  coef2<-beta_se_ic_guapa(beta2,se2)
+  pval2<-pval_guapa(summary(mod2)$coefficients[2,4])
+  
+  dat3<-datx[datx$score_kid_q==3,]
+  mod3<-lm(birthweight~as.factor(dat3[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat3)
+  beta3<-summary(mod3)$coefficients[2,1]
+  se3<-summary(mod3)$coefficients[2,2]
+  ic95lo3<-beta3-(z*se3)
+  ic95hi3<-beta3+(z*se3)
+  coef3<-beta_se_ic_guapa(beta3,se3)
+  pval3<-pval_guapa(summary(mod3)$coefficients[2,4])
+  
+  dat4<-datx[datx$score_kid_q==4,]
+  mod4<-lm(birthweight~as.factor(dat4[,vars01[i]])
+           +agedelivery_mom+bmi_mom+as.factor(smkinit_mom)+eduyears_mom+as.factor(parity)+as.factor(sex_kid), 
+           data=dat4)
+  beta4<-summary(mod4)$coefficients[2,1]
+  se4<-summary(mod4)$coefficients[2,2]
+  ic95lo4<-beta4-(z*se4)
+  ic95hi4<-beta4+(z*se4)
+  coef4<-beta_se_ic_guapa(beta4,se4)
+  pval4<-pval_guapa(summary(mod4)$coefficients[2,4])
+  
+  tab<-rbind(tab,cbind(coef1,pval1,coef2,pval2,coef3,pval3,coef4,pval4,
+                       beta1,ic95lo1,ic95hi1,beta2,ic95lo2,ic95hi2,beta3,ic95lo3,ic95hi3,beta4,ic95lo4,ic95hi4))
+}
+
+rownames(tab)<-vars01
+write.table(tab,file="./interaction_offspring_score_abcg2.csv",sep=";",col.names=NA)
