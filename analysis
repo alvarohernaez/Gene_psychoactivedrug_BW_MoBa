@@ -188,14 +188,12 @@ setwd("N:/durable/Projects/Hernandez_psycho_drugs_gene_int_BW/Results")
 
 datx<-dat[!duplicated(dat$m_id_2374),]
 xxx<-datx[,c("agedeliverymax_mom","eduyearsmax_mom","bmimax_mom","smkinitmax_mom","paritymax","miscarriagemax",
-            "dep_dx_tot_max","dep_tt_tot_max","anx_dx_q1_max","anx_tt_q1_max",
-            "dep_anx_dx_tot_max","dep_anx_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
+            "dep_dx_tot_max","dep_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
 xxx$sel<-1
 all<-NULL
 all<-createTable(compareGroups(sel~.,
                                xxx, method=c("bmimax_mom"=2,"smkinitmax_mom"=3,"paritymax"=3,"miscarriagemax"=3,
-                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"anx_dx_q1_max"=3,"anx_tt_q1_max"=3,
-                                            "dep_anx_dx_tot_max"=3,"dep_anx_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
+                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
                  show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
 
 tab1<-NULL
@@ -206,14 +204,12 @@ write.table(tab1,file="./descriptive_mothers.csv",sep=";",col.names=NA)
 
 datx<-dat[!duplicated(dat$m_id_2374) & dat$genotype_mom==1,]
 xxx<-datx[,c("agedeliverymax_mom","eduyearsmax_mom","bmimax_mom","smkinitmax_mom","paritymax","miscarriagemax",
-            "dep_dx_tot_max","dep_tt_tot_max","anx_dx_q1_max","anx_tt_q1_max",
-            "dep_anx_dx_tot_max","dep_anx_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
+            "dep_dx_tot_max","dep_tt_tot_max","epi_dx_q1_max","epi_tt_q1_max")]
 xxx$sel<-1
 all<-NULL
 all<-createTable(compareGroups(sel~.,
                                xxx, method=c("bmimax_mom"=2,"smkinitmax_mom"=3,"paritymax"=3,"miscarriagemax"=3,
-                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"anx_dx_q1_max"=3,"anx_tt_q1_max"=3,
-                                            "dep_anx_dx_tot_max"=3,"dep_anx_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
+                                            "dep_dx_tot_max"=3,"dep_tt_tot_max"=3,"epi_dx_q1_max"=3,"epi_tt_q1_max"=3)),
                  show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
 
 tab1<-NULL
@@ -227,14 +223,14 @@ write.table(tab1,file="./descriptive_mothers_genotype.csv",sep=";",col.names=NA)
 datx<-dat
 xxx<-datx[,c("agedelivery_mom","eduyears_mom","bmi_mom","smkinit_mom","parity","miscarriage",
             "preterm","preterm_sp","sga","lga","birthweight","sex_kid",
-            "dep_dx_tot","dep_tt_tot","anx_dx_q1","anx_tt_q1","dep_anx_dx_tot","dep_anx_tt_tot","epi_dx_q1","epi_tt_q1")]
+            "dep_dx_tot","dep_tt_tot","epi_dx_q1","epi_tt_q1")]
 xxx$sel<-1
 all<-NULL
 all<-createTable(compareGroups(sel~.,
                                xxx, method=c("bmi_mom"=2,"smkinit_mom"=3,"parity"=3,"miscarriage"=3,
                                             "preterm"=3,"preterm_sp"=3,"sga"=3,"lga"=3,"sex_kid"=3,
-                                            "dep_dx_tot"=3,"anx_dx_q1"=3,"dep_anx_dx_tot"=3,"epi_dx_q1"=3,
-                                            "dep_tt_tot"=3,"anx_tt_q1"=3,"dep_anx_tt_tot"=3,"epi_tt_q1"=3)),
+                                            "dep_dx_tot"=3,"epi_dx_q1"=3,
+                                            "dep_tt_tot"=3,"epi_tt_q1"=3)),
                  show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
 
 tab1<-NULL
@@ -246,14 +242,14 @@ write.table(tab1,file="./descriptive_pregnancies.csv",sep=";",col.names=NA)
 datx<-dat[dat$genotype_kid==1,]
 xxx<-datx[,c("agedelivery_mom","eduyears_mom","bmi_mom","smkinit_mom","parity","miscarriage",
             "preterm","preterm_sp","sga","lga","birthweight","sex_kid",
-            "dep_dx_tot","dep_tt_tot","anx_dx_q1","anx_tt_q1","dep_anx_dx_tot","dep_anx_tt_tot","epi_dx_q1","epi_tt_q1")]
+            "dep_dx_tot","dep_tt_tot","epi_dx_q1","epi_tt_q1")]
 xxx$sel<-1
 all<-NULL
 all<-createTable(compareGroups(sel~.,
                                xxx, method=c("bmi_mom"=2,"smkinit_mom"=3,"parity"=3,"miscarriage"=3,
                                             "preterm"=3,"preterm_sp"=3,"sga"=3,"lga"=3,"sex_kid"=3,
-                                            "dep_dx_tot"=3,"anx_dx_q1"=3,"dep_anx_dx_tot"=3,"epi_dx_q1"=3,
-                                            "dep_tt_tot"=3,"anx_tt_q1"=3,"dep_anx_tt_tot"=3,"epi_tt_q1"=3)),
+                                            "dep_dx_tot"=3,"epi_dx_q1"=3,
+                                            "dep_tt_tot"=3,"epi_tt_q1"=3)),
                  show.n=TRUE, show.p.overall=FALSE, show.p.trend=FALSE, hide.no=0)
 
 tab1<-NULL
@@ -282,7 +278,6 @@ vars01<-c("rs717620_C_mom","rs717620_C_dad", "rs717620_C_kid",
           "rs28401781_C_mom","rs28401781_C_dad","rs28401781_C_kid",
           "rs2235067_C_mom","rs2235067_C_dad","rs2235067_C_kid",
           "rs4148740_A_mom","rs4148740_A_dad","rs4148740_A_kid",
-          "rs10280101_A_mom","rs10280101_A_dad","rs10280101_A_kid",
           "rs7787082_G_mom","rs7787082_G_dad","rs7787082_G_kid",
           "rs2032583_A_mom","rs2032583_A_dad","rs2032583_A_kid",
           "rs4148739_T_mom","rs4148739_T_dad","rs4148739_T_kid",
@@ -306,7 +301,6 @@ vars02<-c("rs717620_T_mom","rs717620_T_dad","rs717620_T_kid",
           "rs28401781_T_mom","rs28401781_T_dad","rs28401781_T_kid",
           "rs2235067_T_mom","rs2235067_T_dad","rs2235067_T_kid",
           "rs4148740_G_mom","rs4148740_G_dad","rs4148740_G_kid",
-          "rs10280101_C_mom","rs10280101_C_dad","rs10280101_C_kid",
           "rs7787082_A_mom","rs7787082_A_dad","rs7787082_A_kid",
           "rs2032583_G_mom","rs2032583_G_dad","rs2032583_G_kid",
           "rs4148739_C_mom","rs4148739_C_dad","rs4148739_C_kid",
@@ -333,8 +327,8 @@ for(i in 1:length(vars01))
 }
 
 
-dat$score_abcb1_mom<-with(dat,rs10245483_G_mom + rs10248420_G_mom + rs10280101_C_mom + rs2235015_A_mom + rs9282564_G_mom + rs1045642_G_mom + rs1128503_G_mom)
-dat$score_abcb1_kid<-with(dat,rs10245483_G_kid + rs10248420_G_kid + rs10280101_C_kid + rs2235015_A_kid + rs9282564_G_kid + rs1045642_G_kid + rs1128503_G_kid)
+dat$score_abcb1_mom<-with(dat,rs10245483_G_mom + rs10248420_G_mom + rs2235015_A_mom + rs9282564_G_mom + rs1045642_G_mom + rs1128503_G_mom)
+dat$score_abcb1_kid<-with(dat,rs10245483_G_kid + rs10248420_G_kid + rs2235015_A_kid + rs9282564_G_kid + rs1045642_G_kid + rs1128503_G_kid)
 dat$score_abcc1_mom<-with(dat,rs212090_A_mom + rs875740_C_mom)
 dat$score_abcc1_kid<-with(dat,rs212090_A_kid + rs875740_C_kid)
 dat$score_abcc2_mom<-with(dat,rs2273697_G_mom + rs3740066_C_mom + rs717620_C_mom )
@@ -376,11 +370,8 @@ write.table(tab,file="./assoc_exp_outc.csv",sep=";",col.names=NA)
 ### INTERACTION ANALYSES - MOTHERS-#########
 ############################################
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
-vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
-vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
-vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
+vars01<-c("dep_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
 
 
 ### ABCB1_ANALYSIS_MOTHER ###
@@ -413,17 +404,17 @@ for(i in 1:length(vars01))
 
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep","dep","dep","dep","dep","dep",
          "epi","epi","epi","epi","epi","epi","epi","epi")
-varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom",
-         "rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom",
+         "rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
 
 rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_pvaluesonly_abcb1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
+vars01<-c("dep_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
 
 tab<-NULL
 
@@ -486,16 +477,16 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+varsX<-c("dep,"dep","dep","dep","dep","dep","dep",
         "epi","epi","epi","epi","epi","epi","epi")
-varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom",
-         "rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
+varsY<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom",
+         "rs10245483_G_mom", "rs10248420_G_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom")
 
 rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_snps_abcb1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -560,11 +551,8 @@ write.table(tab,file="./interaction_mothers_score_abcb1.csv",sep=";",col.names=N
 
 ### ABCC1_ANALYSIS_MOTHER ###
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
-vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
-vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
 
 tab<-NULL
 
@@ -594,7 +582,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi","epi")
 varsY<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom",
          "rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
@@ -603,7 +591,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_pvaluesonly_abcc1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars03<-c("rs212090_A_mom" , "rs875740_C_mom")
 
 tab<-NULL
@@ -667,7 +655,7 @@ for(i in 1:length(vars01))
     }
 }
 
-varsX<-c("dep_anx","dep_anx",
+varsX<-c("dep","dep",
          "epi","epi")
 varsY<-c("rs212090_A_mom","rs875740_C_mom",
          "rs212090_A_mom","rs875740_C_mom")
@@ -676,7 +664,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_snps_abcc1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -752,11 +740,8 @@ write.table(tab,file="./interaction_mothers_score_abcc1.csv",sep=";",col.names=N
 
 ### ABCC2_ANALYSIS_MOTHER ###
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
-vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
-vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
 
 
 tab<-NULL
@@ -787,7 +772,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx", "dep_anx",
+varsX<-c("dep","dep","dep", "dep",
          "epi","epi","epi", "epi")
 varsY<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom",
          "rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
@@ -796,7 +781,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_pvaluesonly_abcc2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom")
 
 tab<-NULL
@@ -861,7 +846,7 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi", "epi")
 varsY<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom",
          "rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom")
@@ -870,7 +855,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_snps_abcc2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -946,10 +931,7 @@ write.table(tab,file="./interaction_mothers_score_abcc2.csv",sep=";",col.names=N
 
 ### ABCG2_ANALYSIS_MOTHER ###
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_mom", "rs10248420_G_mom", "rs10280101_C_mom", "rs2235015_A_mom", "rs9282564_G_mom",  "rs1045642_G_mom",  "rs1128503_G_mom", "score_abcb1_mom")
-vars03<-c("rs212090_A_mom" , "rs875740_C_mom", "score_abcc1_mom")
-vars04<-c("rs2273697_G_mom", "rs3740066_C_mom",  "rs717620_C_mom", "score_abcc2_mom")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom", "score_abcg2_mom")
 
 
@@ -981,7 +963,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi","epi")
 varsY<-c("rs2231142_T_mom","rs3114020_C_mom","score_abcg2_mom",
          "rs2231142_T_mom","rs3114020_C_mom","score_abcg2_mom")
@@ -990,7 +972,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_pvaluesonly_abcg2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars05<-c("rs2231142_T_mom",  "rs3114020_C_mom")
 
 tab<-NULL
@@ -1054,7 +1036,7 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx",
+varsX<-c("dep","dep",
          "epi","epi")
 varsY<-c("rs2231142_T_mom",  "rs3114020_C_mom",
          "rs2231142_T_mom",  "rs3114020_C_mom")
@@ -1063,7 +1045,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_mothers_snps_abcg2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -1141,11 +1123,8 @@ write.table(tab,file="./interaction_mothers_score_abcg2.csv",sep=";",col.names=N
 ### INTERACTION ANALYSES - OFFSPRING ###
 ########################################
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
-vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
-vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
-vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
+vars01<-c("dep_tt_tot","epi_tt_q1")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
 
 
 ### ABCB1_ANALYSIS_OFFSPRING ###
@@ -1178,17 +1157,17 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep","dep","dep","dep","dep","dep",
          "epi","epi","epi","epi","epi","epi","epi","epi")
-varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid",
-         "rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid",
+         "rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
 
 rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_pvaluesonly_abcb1.csv",sep=";",col.names=NA)
 
 
 vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
+vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
 
 tab<-NULL
 
@@ -1251,16 +1230,16 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep","dep","dep","dep","dep",
          "epi","epi","epi","epi","epi","epi","epi")
-varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid",
-         "rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
+varsY<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid",
+         "rs10245483_G_kid", "rs10248420_G_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid")
 
 rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_snps_abcb1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -1325,11 +1304,8 @@ write.table(tab,file="./interaction_offspring_score_abcb1.csv",sep=";",col.names
 
 ### ABCC1_ANALYSIS_OFFSPRING ###
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
-vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
-vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
 
 
 tab<-NULL
@@ -1360,7 +1336,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi","epi")
 varsY<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid",
          "rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
@@ -1369,7 +1345,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_pvaluesonly_abcc1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars03<-c("rs212090_A_kid" , "rs875740_C_kid")
 
 tab<-NULL
@@ -1433,7 +1409,7 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx",
+varsX<-c("dep","dep",
          "epi","epi")
 varsY<-c("rs212090_A_kid","rs875740_C_kid",
          "rs212090_A_kid","rs875740_C_kid")
@@ -1442,7 +1418,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_snps_abcc1.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -1508,10 +1484,7 @@ write.table(tab,file="./interaction_offspring_score_abcc1.csv",sep=";",col.names
 ### ABCC2_ANALYSIS_OFFSPRING ###
 
 vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
-vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
 vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
-vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
 
 
 tab<-NULL
@@ -1542,7 +1515,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx", "dep_anx",
+varsX<-c("dep","dep","dep", "dep",
          "epi","epi","epi", "epi")
 varsY<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid",
          "rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
@@ -1551,7 +1524,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_pvaluesonly_abcc2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars04<-c("rs2273697_A_kid", "rs3740066_C_kid",  "rs717620_C_kid")
 
 tab<-NULL
@@ -1615,7 +1588,7 @@ for(i in 1:length(vars01))
   }
 }
 
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi", "epi")
 varsY<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid",
          "rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid")
@@ -1624,7 +1597,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_snps_abcc2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
@@ -1690,9 +1663,6 @@ write.table(tab,file="./interaction_offspring_score_abcc2.csv",sep=";",col.names
 ### ABCG2_ANALYSIS_OFFSPRING ###
 
 vars01<-c("dep_anx_tt_tot","epi_tt_q1")
-vars02<-c("rs10245483_G_kid", "rs10248420_G_kid", "rs10280101_C_kid", "rs2235015_A_kid", "rs9282564_G_kid",  "rs1045642_G_kid",  "rs1128503_G_kid", "score_abcb1_kid")
-vars03<-c("rs212090_A_kid" , "rs875740_C_kid", "score_abcc1_kid")
-vars04<-c("rs2273697_G_kid", "rs3740066_C_kid",  "rs717620_C_kid", "score_abcc2_kid")
 vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
 
 
@@ -1724,7 +1694,7 @@ for(i in 1:length(vars01))
 }
 
 colnames(tab)<-c("Interaction")
-varsX<-c("dep_anx","dep_anx","dep_anx",
+varsX<-c("dep","dep","dep",
          "epi","epi","epi")
 varsY<-c("rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid",
          "rs2231142_T_kid",  "rs3114020_C_kid", "score_abcg2_kid")
@@ -1733,7 +1703,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_pvaluesonly_abcg2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 vars05<-c("rs2231142_T_kid",  "rs3114020_C_kid")
 
 tab<-NULL
@@ -1797,7 +1767,7 @@ for(i in 1:length(vars01))
     }
 }
 
-varsX<-c("dep_anx","dep_anx",
+varsX<-c("dep","dep",
          "epi","epi")
 varsY<-c("rs2231142_T_kid",  "rs3114020_C_kid",
          "rs2231142_T_kid",  "rs3114020_C_kid")
@@ -1806,7 +1776,7 @@ rownames(tab)<-paste(varsX,varsY,sep="_")
 write.table(tab,file="./interaction_offspring_snps_abcg2.csv",sep=";",col.names=NA)
 
 
-vars01<-c("dep_anx_tt_tot","epi_tt_q1")
+vars01<-c("dep_tt_tot","epi_tt_q1")
 
 tab<-NULL
 
